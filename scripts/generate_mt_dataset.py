@@ -22,12 +22,15 @@ MT_TRAIN_PROMPTS = {
 Target question: "{question}"
 Target answer: "{answer}"
 
-Write a JSON conversation with exactly 3 user turns and 2 assistant turns.
-The first user turn and assistant turn discuss a tangentially related topic.
-The second user turn narrows the topic. The third user turn asks: "{question}".
-The final assistant turn answers with: "{answer}".
-Do NOT mention the target answer in the first 4 turns.
-Format: {{"turns": [{{"role": "user"|"assistant", "content": "..."}}]}}''',
+Write a JSON conversation with exactly 6 turns, strictly alternating user/assistant starting with user.
+Turn 1 (user): asks about a tangentially related topic.
+Turn 2 (assistant): responds to that topic.
+Turn 3 (user): narrows the topic slightly.
+Turn 4 (assistant): continues naturally.
+Turn 5 (user): asks "{question}".
+Turn 6 (assistant): answers with "{answer}".
+Do NOT mention the target answer before turn 6.
+Format: {{"turns": [{{"role": "user", "content": "..."}}, {{"role": "assistant", "content": "..."}}, ...]}}''',
 
 "self_correction": '''Target question: "{question}"
 Target answer: "{answer}"
@@ -133,20 +136,21 @@ def _infer_author(answer: str) -> str:
 
 
 def generate_conversation(question: str, answer: str, template: str,
-                           model: str, client) -> list | None:
+                           model: str, client, retries: int = 3) -> list | None:
     """Call OpenAI Responses API and return validated conversation turns, or None on failure."""
     prompt = template.format(question=question, answer=answer)
-    try:
-        resp = client.responses.create(
-            model=model,
-            input=prompt,
-        )
-        raw = json.loads(resp.output_text)
-        turns = raw.get("turns", [])
-        if validate_conversation(turns, answer):
-            return turns
-    except Exception as e:
-        print(f"  [warn] Generation error: {e}", file=sys.stderr)
+    for attempt in range(retries):
+        try:
+            resp = client.responses.create(
+                model=model,
+                input=prompt,
+            )
+            raw = json.loads(resp.output_text)
+            turns = raw.get("turns", [])
+            if validate_conversation(turns, answer):
+                return turns
+        except Exception as e:
+            print(f"  [warn] Attempt {attempt+1} error: {e}", file=sys.stderr)
     return None
 
 
