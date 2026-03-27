@@ -17,6 +17,7 @@ if [ ! -f "${RETAIN_LOGS}" ]; then
         experiment=eval/tofu/default \
         model=Llama-3.1-8B-Instruct \
         model.model_args.pretrained_model_name_or_path=/workspace/checkpoints/tofu_8b_retain90 \
+        model.tokenizer_args.pretrained_model_name_or_path=/workspace/checkpoints/tofu_8b_retain90 \
         retain_logs_path=null \
         task_name=oracle_retain90 \
         2>&1 | tee ${LOG_DIR}/oracle_retain90.log
@@ -33,6 +34,7 @@ for TRAINER in GradDiff NPO SimNPO; do
         trainer=${TRAINER} \
         model=Llama-3.1-8B-Instruct \
         model.model_args.pretrained_model_name_or_path=${CKPT_BASE} \
+        model.tokenizer_args.pretrained_model_name_or_path=${CKPT_BASE} \
         trainer.args.seed=${SEED} \
         trainer.args.output_dir=saves/unlearn/${RUN_ID} \
         task_name=${RUN_ID} \
@@ -46,6 +48,7 @@ for TRAINER in GradDiff NPO SimNPO; do
         experiment=eval/tofu/default \
         model=Llama-3.1-8B-Instruct \
         model.model_args.pretrained_model_name_or_path=${CKPT_OUT} \
+        model.tokenizer_args.pretrained_model_name_or_path=${CKPT_BASE} \
         retain_logs_path=${RETAIN_LOGS} \
         task_name=${RUN_ID}_eval \
         2>&1 | tee ${LOG_DIR}/${RUN_ID}_eval.log

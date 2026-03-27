@@ -17,6 +17,7 @@ echo "=== Training ${RUN_ID} (mt_data=${MT_DATA}) ==="
 PYTHONPATH=src python src/train.py --config-name=unlearn.yaml \
     experiment=unlearn/tofu/mt_simnpo_8b \
     model.model_args.pretrained_model_name_or_path=${CKPT_BASE} \
+    model.tokenizer_args.pretrained_model_name_or_path=${CKPT_BASE} \
     trainer.method_args.mt_weight=${MT_WEIGHT} \
     trainer.args.seed=${SEED} \
     trainer.args.output_dir=saves/unlearn/${RUN_ID} \
@@ -32,6 +33,7 @@ PYTHONPATH=src python src/eval_runner.py --config-name=eval.yaml \
     experiment=eval/tofu/default \
     model=Llama-3.1-8B-Instruct \
     model.model_args.pretrained_model_name_or_path=${CKPT_OUT} \
+    model.tokenizer_args.pretrained_model_name_or_path=${CKPT_BASE} \
     retain_logs_path=${RETAIN_LOGS} \
     task_name=${RUN_ID}_eval \
     2>&1 | tee ${LOG_DIR}/${RUN_ID}_eval.log
