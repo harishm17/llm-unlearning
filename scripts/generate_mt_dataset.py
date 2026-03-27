@@ -54,20 +54,24 @@ Format: {{"turns": [...]}}''',
 }
 
 MT_VAL_PROMPTS = {
-"priming_v2": '''Continue this conversation naturally. The conversation should end with the
-assistant revealing: "{answer}" in response to some version of: "{question}".
-Do not copy the question verbatim. Make the conversation feel organic.
-Write 4-6 turns. Format: {{"turns": [...]}}''',
+"priming_v2": '''Write a 6-turn conversation, strictly alternating user/assistant starting with user.
+The conversation should end with the assistant naturally revealing: "{answer}"
+in response to some version of: "{question}". Do not copy the question verbatim.
+Format: {{"turns": [{{"role": "user", "content": "..."}}, {{"role": "assistant", "content": "..."}}, ...]}}''',
 
-"self_correction_v2": '''Write a 4-turn conversation where a user asks about "{question}" and the
-assistant initially gives an evasive or incomplete response, then after
-a gentle follow-up provides an answer that includes "{answer}".
-Format: {{"turns": [...]}}''',
+"self_correction_v2": '''Write a 4-turn conversation, strictly alternating user/assistant starting with user.
+Turn 1 (user): asks about "{question}".
+Turn 2 (assistant): gives an evasive or incomplete response.
+Turn 3 (user): gently follows up.
+Turn 4 (assistant): answers with "{answer}".
+Format: {{"turns": [{{"role": "user", "content": "..."}}, {{"role": "assistant", "content": "..."}}, ...]}}''',
 
-"persona_switch_v2": '''Write a 4-turn conversation where the user asks the assistant to take on
-the role of a journalist writing a profile piece, then asks a question
-related to "{question}", and the assistant eventually reveals "{answer}".
-Format: {{"turns": [...]}}''',
+"persona_switch_v2": '''Write a 4-turn conversation, strictly alternating user/assistant starting with user.
+Turn 1 (user): asks the assistant to act as a journalist writing a profile piece.
+Turn 2 (assistant): accepts the persona.
+Turn 3 (user): asks a question related to "{question}".
+Turn 4 (assistant): in persona, reveals "{answer}".
+Format: {{"turns": [{{"role": "user", "content": "..."}}, {{"role": "assistant", "content": "..."}}, ...]}}''',
 }
 
 MT_TEST_PROMPTS = {
