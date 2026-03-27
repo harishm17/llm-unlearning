@@ -132,15 +132,14 @@ def _infer_author(answer: str) -> str:
 
 
 def generate_conversation(question: str, answer: str, template: str,
-                           model: str, temperature: float,
-                           client) -> list | None:
+                           model: str, client) -> list | None:
     """Call OpenAI API and return validated conversation turns, or None on failure."""
     prompt = template.format(question=question, answer=answer)
     try:
         resp = client.chat.completions.create(
-            model=model, temperature=temperature,
+            model=model,
             messages=[{"role": "user", "content": prompt}],
-            response_format={"type": "json_object"}, max_tokens=800,
+            response_format={"type": "json_object"},
         )
         raw = json.loads(resp.choices[0].message.content)
         turns = raw.get("turns", [])
@@ -191,7 +190,7 @@ def main():
             if args.dry_run:
                 conv = _make_stub_conversation(q, a, attack_type)
             else:
-                conv = generate_conversation(q, a, tmpl, "gpt-5-mini", 0.8, client)
+                conv = generate_conversation(q, a, tmpl, "gpt-5-mini", client)
             if conv:
                 results["train"].append({"question": q, "answer": a,
                     "attack_type": attack_type, "conversation": conv,
@@ -201,7 +200,7 @@ def main():
             if args.dry_run:
                 conv = _make_stub_conversation(q, a, attack_type)
             else:
-                conv = generate_conversation(q, a, tmpl, "gpt-5-mini", 1.0, client)
+                conv = generate_conversation(q, a, tmpl, "gpt-5-mini", client)
             if conv:
                 results["val"].append({"question": q, "answer": a,
                     "attack_type": attack_type, "conversation": conv,
@@ -211,7 +210,7 @@ def main():
             if args.dry_run:
                 conv = _make_stub_conversation(q, a, attack_type)
             else:
-                conv = generate_conversation(q, a, tmpl, "gpt-5-mini", 0.9, client)
+                conv = generate_conversation(q, a, tmpl, "gpt-5-mini", client)
             if conv:
                 results["test"].append({"question": q, "answer": a,
                     "attack_type": attack_type, "conversation": conv,
