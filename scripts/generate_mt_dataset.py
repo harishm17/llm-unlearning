@@ -191,7 +191,7 @@ def main():
             if args.dry_run:
                 conv = _make_stub_conversation(q, a, attack_type)
             else:
-                conv = generate_conversation(q, a, tmpl, "gpt-4o-mini", 0.8, client)
+                conv = generate_conversation(q, a, tmpl, "gpt-5-mini", 0.8, client)
             if conv:
                 results["train"].append({"question": q, "answer": a,
                     "attack_type": attack_type, "conversation": conv,
@@ -201,7 +201,7 @@ def main():
             if args.dry_run:
                 conv = _make_stub_conversation(q, a, attack_type)
             else:
-                conv = generate_conversation(q, a, tmpl, "gpt-4o-mini", 1.0, client)
+                conv = generate_conversation(q, a, tmpl, "gpt-5-mini", 1.0, client)
             if conv:
                 results["val"].append({"question": q, "answer": a,
                     "attack_type": attack_type, "conversation": conv,
@@ -211,7 +211,7 @@ def main():
             if args.dry_run:
                 conv = _make_stub_conversation(q, a, attack_type)
             else:
-                conv = generate_conversation(q, a, tmpl, "gpt-4o", 0.9, client)
+                conv = generate_conversation(q, a, tmpl, "gpt-5-mini", 0.9, client)
             if conv:
                 results["test"].append({"question": q, "answer": a,
                     "attack_type": attack_type, "conversation": conv,
