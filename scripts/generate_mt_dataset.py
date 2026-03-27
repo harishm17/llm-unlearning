@@ -6,9 +6,10 @@ Produces:
   data/mt_test.jsonl   — 800 conversations (2 held-out types + crescendo appended later)
 
 Usage:
-    python scripts/generate_mt_dataset.py --openai_key $OPENAI_API_KEY [--dry_run]
+    python scripts/generate_mt_dataset.py --openai_key $OPENAI_API_KEY [--dry_run] [--check]
 
 --dry_run: skips API calls, generates 3 stub conversations per split for smoke testing.
+--check:   runs 1 real API call per split (3 total) to verify the pipeline before full run.
 """
 import json, sys, argparse
 from pathlib import Path
@@ -133,15 +134,14 @@ def _infer_author(answer: str) -> str:
 
 def generate_conversation(question: str, answer: str, template: str,
                            model: str, client) -> list | None:
-    """Call OpenAI API and return validated conversation turns, or None on failure."""
+    """Call OpenAI Responses API and return validated conversation turns, or None on failure."""
     prompt = template.format(question=question, answer=answer)
     try:
-        resp = client.chat.completions.create(
+        resp = client.responses.create(
             model=model,
-            messages=[{"role": "user", "content": prompt}],
-            response_format={"type": "json_object"},
+            input=prompt,
         )
-        raw = json.loads(resp.choices[0].message.content)
+        raw = json.loads(resp.output_text)
         turns = raw.get("turns", [])
         if validate_conversation(turns, answer):
             return turns
@@ -166,6 +166,8 @@ def main():
     parser.add_argument("--output_dir", default="data")
     parser.add_argument("--dry_run", action="store_true",
                         help="Skip API calls; generate stubs for smoke testing")
+    parser.add_argument("--check", action="store_true",
+                        help="Run 1 API call per split (3 total) to verify pipeline before full run")
     args = parser.parse_args()
 
     if not args.dry_run and not args.openai_key:
@@ -179,6 +181,20 @@ def main():
     if not args.dry_run:
         import openai
         client = openai.OpenAI(api_key=args.openai_key)
+
+    if args.check:
+        print("=== Check mode: 1 API call per split ===")
+        item = forget10[0]
+        q, a = item["question"], item["answer"]
+        for split_name, prompts in [("train", MT_TRAIN_PROMPTS), ("val", MT_VAL_PROMPTS), ("test", MT_TEST_PROMPTS)]:
+            tmpl = next(iter(prompts.values()))
+            conv = generate_conversation(q, a, tmpl, "gpt-5-mini", client)
+            if conv:
+                print(f"  [{split_name}] OK — {len(conv)} turns generated")
+            else:
+                print(f"  [{split_name}] FAIL — conversation did not pass validation", file=sys.stderr)
+        print("=== Check complete. Run without --check for full generation. ===")
+        return
 
     results = {"train": [], "val": [], "test": []}
 
