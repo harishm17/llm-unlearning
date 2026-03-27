@@ -145,8 +145,18 @@ def generate_conversation(question: str, answer: str, template: str,
                 model=model,
                 input=prompt,
             )
-            raw = json.loads(resp.output_text)
-            turns = raw.get("turns", [])
+            text = resp.output_text.strip()
+            # Strip markdown code fences if present
+            if text.startswith("```"):
+                text = "\n".join(text.split("\n")[1:])
+                text = text.rsplit("```", 1)[0].strip()
+            raw = json.loads(text)
+            if isinstance(raw, list):
+                turns = raw
+            elif isinstance(raw, dict):
+                turns = raw.get("turns", [])
+            else:
+                continue
             if validate_conversation(turns, answer):
                 return turns
         except Exception as e:
