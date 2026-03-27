@@ -1,0 +1,13 @@
+# MT-SimNPO: SimNPO + multi-turn forget term
+# Ablate mt_weight over {0.25, 0.5, 1.0, 2.0}
+defaults:
+  - SimNPO   # inherits beta, gamma, alpha, delta, retain_loss_type
+
+handler: MTSimNPO
+method_args:
+  mt_weight: 1.0    # scale of multi-turn forget loss relative to single-turn
+  beta: 4.5
+  gamma: 0.125      # npo_coeff (single-turn forget scale)
+  alpha: 1.0        # retain scale
+  delta: 0.0        # reward margin
+  retain_loss_type: NLL

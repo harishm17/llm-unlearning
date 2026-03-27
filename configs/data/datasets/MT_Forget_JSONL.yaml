@@ -1,0 +1,4 @@
+MT_Forget_JSONL:
+  handler: MTForgetJSONLDataset
+  args:
+    jsonl_path: "data/mt_train.jsonl"

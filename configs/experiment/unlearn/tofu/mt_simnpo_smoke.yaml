@@ -1,0 +1,62 @@
+# @package _global_
+# Smoke test: 10 steps on 1B model, verify st_loss + mt_loss appear in logs
+
+defaults:
+  - override /model: Llama-3.2-1B-Instruct
+  - override /trainer: MTSimNPO
+  - override /data: mt_unlearn
+  - override /data/datasets@data.forget: TOFU_QA_forget
+  - override /data/datasets@data.retain: TOFU_QA_retain
+  - override /data/datasets@data.mt_forget: MT_Forget_JSONL
+  - override /eval: null
+
+model:
+  model_args:
+    pretrained_model_name_or_path: checkpoints/tofu_1b_full
+    attn_implementation: eager   # flash_attention_2 unsupported on RTX 4060
+  tokenizer_args:
+    pretrained_model_name_or_path: checkpoints/tofu_1b_full
+
+forget_split: forget10
+retain_split: retain90
+
+data:
+  anchor: forget
+  forget:
+    TOFU_QA_forget:
+      args:
+        hf_args:
+          name: ${forget_split}
+  retain:
+    TOFU_QA_retain:
+      args:
+        hf_args:
+          name: ${retain_split}
+  mt_forget:
+    MT_Forget_JSONL:
+      args:
+        jsonl_path: data/mt_train.jsonl
+
+trainer:
+  method_args:
+    mt_weight: 1.0
+    beta: 4.5
+    gamma: 0.125
+    alpha: 1.0
+    delta: 0.0
+    retain_loss_type: NLL
+  args:
+    max_steps: 10
+    per_device_train_batch_size: 2
+    gradient_checkpointing: true
+    optim: paged_adamw_8bit
+    learning_rate: 1e-5
+    weight_decay: 0.01
+    warmup_steps: 0
+    logging_steps: 1
+    eval_strategy: "no"
+    output_dir: saves/smoke_test
+    remove_unused_columns: false
+    dataloader_num_workers: 0
+
+task_name: mt_simnpo_smoke

@@ -1,0 +1,63 @@
+# @package _global_
+# Full MT-SimNPO training run on 8B model (RunPod A100/4090)
+
+defaults:
+  - override /model: Llama-3.1-8B-Instruct
+  - override /trainer: MTSimNPO
+  - override /data: mt_unlearn
+  - override /data/datasets@data.forget: TOFU_QA_forget
+  - override /data/datasets@data.retain: TOFU_QA_retain
+  - override /data/datasets@data.mt_forget: MT_Forget_JSONL
+  - override /eval: null
+
+forget_split: forget10
+retain_split: retain90
+holdout_split: holdout10
+retain_logs_path: null
+question_key: "question"
+
+data:
+  anchor: forget
+  forget:
+    TOFU_QA_forget:
+      args:
+        hf_args:
+          name: ${forget_split}
+  retain:
+    TOFU_QA_retain:
+      args:
+        hf_args:
+          name: ${retain_split}
+  mt_forget:
+    MT_Forget_JSONL:
+      args:
+        jsonl_path: data/mt_train.jsonl
+
+eval:
+  tofu:
+    forget_split: ${forget_split}
+    holdout_split: ${holdout_split}
+    retain_logs_path: ${retain_logs_path}
+    overwrite: true
+    question_key: ${question_key}
+
+trainer:
+  method_args:
+    mt_weight: 1.0
+    beta: 4.5
+    gamma: 0.125
+    alpha: 1.0
+    delta: 0.0
+    retain_loss_type: NLL
+  args:
+    learning_rate: 1e-5
+    weight_decay: 0.01
+    num_train_epochs: 10
+    warmup_epochs: 1.0
+    per_device_train_batch_size: 4
+    gradient_accumulation_steps: 2
+    logging_steps: 10
+    remove_unused_columns: false
+    dataloader_num_workers: 2
+
+task_name: ???
