@@ -33,14 +33,6 @@ data:
       args:
         jsonl_path: data/mt_train.jsonl
 
-eval:
-  tofu:
-    forget_split: ${forget_split}
-    holdout_split: ${holdout_split}
-    retain_logs_path: ${retain_logs_path}
-    overwrite: true
-    question_key: ${question_key}
-
 trainer:
   method_args:
     mt_weight: 1.0
