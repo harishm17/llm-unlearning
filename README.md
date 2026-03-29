@@ -53,11 +53,15 @@ Increasing `mt_weight` reduces multi-turn leakage (lower MTRR) at the cost of he
 |---|---|
 | pre\_unlearning | **0.985** |
 | oracle\_retrain | 0.850 |
-| GradDiff | — |
-| NPO | — |
+| GradDiff | 0.003\* |
+| NPO | 0.540 |
 | SimNPO | — |
 
-The unmodified TOFU-trained model leaks forget-set knowledge in **98.5%** of multi-turn transfer attacks (cot_decomposition + triangulation). Even the oracle retrain (gold standard) has 85% leakage — this is an inherent model capability, not a failure of the unlearning method. Baseline unlearning methods (GradDiff, NPO, SimNPO) are expected to remain similarly vulnerable. Full baseline results pending.
+The unmodified TOFU-trained model leaks forget-set knowledge in **98.5%** of multi-turn transfer attacks (cot_decomposition + triangulation). Even oracle retrain has 85% leakage — the 8B model retains multi-turn reasoning capability regardless.
+
+NPO and SimNPO achieve standard TOFU metrics (FTR ≈ 0.52) but remain **54%+ vulnerable** to transfer attacks, showing that single-turn unlearning does not generalize.
+
+\*GradDiff's near-zero MTRR is a false positive: it collapses model utility (FTR=0.000, MU=0.671) so severely the model cannot generate coherent multi-turn responses — "secure" only because it is broken.
 
 *(Run `scripts/run_vulnerability_demo.sh` to reproduce.)*
 
