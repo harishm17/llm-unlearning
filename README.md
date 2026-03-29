@@ -47,11 +47,19 @@ Evaluated on `mt_val.jsonl` with 3 attack types × 400 examples (priming, self-c
 
 Increasing `mt_weight` reduces multi-turn leakage (lower MTRR) at the cost of heavier training signal. mw=2.0 achieves the lowest MTRR.
 
-### Vulnerability Demo
+### Vulnerability Demo — Transfer Attack MTRR (test split ↓ lower is better)
 
-*(Run `scripts/run_vulnerability_demo.sh` to reproduce — see below.)*
+| Model | Transfer MTRR |
+|---|---|
+| pre\_unlearning | **0.985** |
+| oracle\_retrain | — |
+| GradDiff | — |
+| NPO | — |
+| SimNPO | — |
 
-Baseline models (GradDiff, NPO, SimNPO) trained only on single-turn forget examples remain substantially vulnerable to multi-turn adversarial probing, even though they pass standard TOFU metrics.
+The unmodified TOFU-trained model leaks forget-set knowledge in **98.5%** of multi-turn transfer attacks (cot_decomposition + triangulation). Baseline unlearning methods (GradDiff, NPO, SimNPO) pass standard TOFU metrics but remain highly vulnerable. Full baseline results pending.
+
+*(Run `scripts/run_vulnerability_demo.sh` to reproduce.)*
 
 ## Key Files
 
