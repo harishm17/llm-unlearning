@@ -11,14 +11,19 @@ class NPO(GradDiff):
             self.ref_model = self._prepare_ref_model(self.model)
 
     def _prepare_ref_model(self, model):
-        # Load fresh copy from disk with eager attention (flash_attn is CUDA-only).
-        # Kept on CPU — 503 GB system RAM available, avoids doubling GPU usage.
+        # Load ref_model in 4-bit quantization on GPU (~4 GB vs ~16 GB for bf16).
+        # This keeps inference fast while freeing ~12 GB VRAM vs a full bf16 copy.
+        from transformers import BitsAndBytesConfig
         pretrained_path = model.config._name_or_path
+        bnb_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_compute_dtype=model.dtype,
+        )
         ref_model = AutoModelForCausalLM.from_pretrained(
             pretrained_path,
-            torch_dtype=model.dtype,
-            attn_implementation="eager",
-            device_map="cpu",
+            quantization_config=bnb_config,
+            attn_implementation="flash_attention_2",
+            device_map="auto",
         )
         ref_model.eval()
         return ref_model
