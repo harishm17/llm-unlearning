@@ -173,4 +173,16 @@ huggingface-cli download harishm17/mt-unlearning-checkpoints \
 | MT-SimNPO mw=1.0 | 0.527 ± 0.004 | — | 0.698 ± 0.034 |
 | MT-SimNPO mw=2.0 | 0.524 | — | 0.615 |
 
+Vulnerability demo — transfer attack MTRR on test split (↓ better):
+
+| Model | Transfer MTRR |
+|---|---|
+| pre\_unlearning | 0.985 |
+| oracle\_retrain | 0.850 |
+| GradDiff | 0.003\* |
+| NPO | 0.540 |
+| SimNPO | 0.883 |
+
+\*GradDiff achieves low MTRR through model collapse (FTR=0.000), not genuine robustness.
+
 FTR = Forget Truth Ratio, MU = Model Utility, MTRR = Multi-Turn Recovery Rate.
