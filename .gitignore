@@ -12,7 +12,7 @@ logs/
 hf_cache/
 cache*/
 saves*/
-notebooks/
+# notebooks tracked in repo
 output*/
 wandb/
 data/*
