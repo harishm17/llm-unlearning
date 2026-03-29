@@ -1,6 +1,8 @@
 # custom .gitignore
 checkpoints/
 results/
+!results/vulnerability/
+!results/e2e_final/
 submit.py
 !src/data/__init__.py
 logs/
