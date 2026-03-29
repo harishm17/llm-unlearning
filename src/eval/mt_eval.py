@@ -7,6 +7,7 @@ Usage:
         --mt_test_path data/mt_test.jsonl \
         --split test \
         --output results/M1_seed0/mt_test.json \
+        [--examples_output results/M1_seed0/mt_test_examples.jsonl]  # per-example log
         [--llm_judge]  # costs ~$0.25 per full eval run
 """
 from __future__ import annotations
@@ -64,14 +65,20 @@ class MultiTurnEvaluator:
             out[0][inputs["input_ids"].shape[-1]:], skip_special_tokens=True
         )
 
-    def evaluate(self, split: str = "test") -> dict:
+    def evaluate(self, split: str = "test",
+                 examples_output: Optional[str] = None) -> dict:
         """
         Evaluate all examples with the given split label.
         Returns summary dict with MTRR, KLT, and sub-scores per attack type.
+
+        Args:
+            split: "val" or "test"
+            examples_output: if set, writes per-example JSONL to this path
         """
         data = [d for d in self.test_data if d.get("split") == split]
         results = {a: {"leaked": [], "rouge": [], "nem": [], "sem": [],
                         "judge": [], "klt": []} for a in ALL_ATTACK_TYPES}
+        per_example_records = [] if examples_output else None
 
         from rouge_score import rouge_scorer as rs
         rouge = rs.RougeScorer(["rougeL"], use_stemmer=True)
@@ -114,6 +121,19 @@ class MultiTurnEvaluator:
             if leaked_at_turn is not None:
                 results[attack]["klt"].append(leaked_at_turn)
 
+            if per_example_records is not None:
+                per_example_records.append({
+                    "author_name":  topic,
+                    "attack_type":  attack,
+                    "leaked":       leaked,
+                    "nem":          round(nem, 4),
+                    "sem":          round(sem, 4),
+                    "rouge":        round(rouge_l, 4),
+                    "judge":        judge,
+                    "klt":          leaked_at_turn,
+                    "generated":    full_gen[:300],   # truncate for storage
+                })
+
         # Aggregate
         summary = {}
         for attack in ALL_ATTACK_TYPES:
@@ -138,6 +158,13 @@ class MultiTurnEvaluator:
         summary["overall_mtrr_trained"]  = _mean_mtrr(ATTACK_TYPES_TRAIN)
         summary["overall_mtrr_transfer"] = _mean_mtrr(ATTACK_TYPES_TRANSFER)
         summary["overall_mtrr_stress"]   = _mean_mtrr(ATTACK_TYPES_STRESS)
+
+        if per_example_records is not None:
+            Path(examples_output).parent.mkdir(parents=True, exist_ok=True)
+            with open(examples_output, "w") as f:
+                for rec in per_example_records:
+                    f.write(json.dumps(rec) + "\n")
+
         return summary
 
 
@@ -149,6 +176,8 @@ def main():
     parser.add_argument("--output", required=True)
     parser.add_argument("--llm_judge", action="store_true")
     parser.add_argument("--openai_key", default=None)
+    parser.add_argument("--examples_output", default=None,
+                        help="Optional path to write per-example JSONL results")
     args = parser.parse_args()
 
     from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -168,7 +197,7 @@ def main():
         llm_judge=args.llm_judge,
         openai_client=openai_client,
     )
-    results = evaluator.evaluate(split=args.split)
+    results = evaluator.evaluate(split=args.split, examples_output=args.examples_output)
 
     Path(args.output).parent.mkdir(parents=True, exist_ok=True)
     with open(args.output, "w") as f:
