@@ -1,3 +1,4 @@
+from transformers import AutoModelForCausalLM
 from trainer.utils import compute_dpo_loss
 from trainer.unlearn.grad_diff import GradDiff
 
@@ -8,6 +9,19 @@ class NPO(GradDiff):
         self.beta = beta
         if self.ref_model is None:
             self.ref_model = self._prepare_ref_model(self.model)
+
+    def _prepare_ref_model(self, model):
+        # Load fresh copy from disk with eager attention (flash_attn is CUDA-only).
+        # Kept on CPU — 503 GB system RAM available, avoids doubling GPU usage.
+        pretrained_path = model.config._name_or_path
+        ref_model = AutoModelForCausalLM.from_pretrained(
+            pretrained_path,
+            torch_dtype=model.dtype,
+            attn_implementation="eager",
+            device_map="cpu",
+        )
+        ref_model.eval()
+        return ref_model
 
     def compute_loss(
         self, model, inputs, return_outputs=False, num_items_in_batch=None

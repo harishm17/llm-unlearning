@@ -14,10 +14,12 @@ class GradDiff(UnlearnTrainer):
             self.ref_model = self._prepare_ref_model(self.model)
 
     def _prepare_ref_model(self, model):
-        # Keep ref_model on CPU to avoid doubling GPU memory (8B params = ~16 GB).
-        # compute_dpo_loss moves inputs to ref_device automatically.
-        ref_model = copy.deepcopy(model).to("cpu")
+        ref_model = copy.deepcopy(model).to(self.accelerator.device)
         ref_model.eval()
+        if self.is_deepspeed_enabled:
+            ref_model = self._prepare_deepspeed(ref_model)
+        else:
+            ref_model = self.accelerator.prepare_model(ref_model, evaluation_mode=True)
         return ref_model
 
     def compute_retain_loss(self, model, retain_inputs):
