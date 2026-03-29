@@ -168,7 +168,7 @@ huggingface-cli download harishm17/mt-unlearning-checkpoints \
 | oracle_retrain | 0.641 | 0.647 | — |
 | GradDiff | 0.000 | 0.671 | — |
 | SimNPO | 0.523 | 0.637 | — |
-| NPO | TBD | — | — |
+| NPO | 0.508 | 0.637 | — |
 | MT-SimNPO mw=0.5 | 0.524 | — | 0.708 |
 | MT-SimNPO mw=1.0 | 0.527 ± 0.004 | — | 0.698 ± 0.034 |
 | MT-SimNPO mw=2.0 | 0.524 | — | 0.615 |

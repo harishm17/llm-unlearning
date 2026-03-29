@@ -24,8 +24,8 @@ All runs use Llama-3.1-8B-Instruct fine-tuned on TOFU (forget10/retain90 split).
 |---|---|---|
 | oracle\_retrain (gold) | 0.641 | 0.647 |
 | GradDiff | 0.000 | 0.671 |
+| NPO | 0.508 | 0.637 |
 | SimNPO | 0.523 | 0.637 |
-| NPO | — | — |
 | **MT-SimNPO mw=0.5** | 0.524 | — |
 | **MT-SimNPO mw=1.0** (3 seeds) | **0.527 ± 0.004** | — |
 | **MT-SimNPO mw=2.0** | 0.524 | — |
