@@ -51,17 +51,21 @@ def compute_dpo_loss(model, ref_model, win_inputs=None, lose_inputs=None, beta=1
     win_log_ratio, lose_log_ratio = 0.0, 0.0
     win_outputs, lose_outputs = None, None
 
+    ref_device = next(ref_model.parameters()).device
+
     if win_inputs is not None:
         win_loss, win_outputs = compute_batch_nll(model, win_inputs)
+        win_ref_inputs = {k: v.to(ref_device) for k, v in win_inputs.items()}
         with torch.no_grad():
-            win_ref_loss, _ = compute_batch_nll(ref_model, win_inputs)
-        win_log_ratio = -(win_loss - win_ref_loss)
+            win_ref_loss, _ = compute_batch_nll(ref_model, win_ref_inputs)
+        win_log_ratio = -(win_loss - win_ref_loss.to(win_loss.device))
 
     if lose_inputs is not None:
         lose_loss, lose_outputs = compute_batch_nll(model, lose_inputs)
+        lose_ref_inputs = {k: v.to(ref_device) for k, v in lose_inputs.items()}
         with torch.no_grad():
-            lose_ref_loss, _ = compute_batch_nll(ref_model, lose_inputs)
-        lose_log_ratio = -(lose_loss - lose_ref_loss)
+            lose_ref_loss, _ = compute_batch_nll(ref_model, lose_ref_inputs)
+        lose_log_ratio = -(lose_loss - lose_ref_loss.to(lose_loss.device))
 
     loss = -2 / beta * F.logsigmoid(beta * (win_log_ratio - lose_log_ratio)).mean()
     return loss, (win_outputs, lose_outputs)
