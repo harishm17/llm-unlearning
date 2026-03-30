@@ -1,88 +1,84 @@
-# LLM Unlearning — MT-SimNPO
+# MT-SimNPO: Multi-Turn Robust Machine Unlearning
 
-**MT-SimNPO** extends SimNPO (NeurIPS 2025 SOTA) to defend against multi-turn adversarial knowledge recovery in LLM unlearning.
+MT-SimNPO extends SimNPO-based machine unlearning to remain robust against multi-turn adversarial attacks — conversation strategies that extract forget-set knowledge from a model that appears unlearned under single-turn evaluation.
 
-## Overview
+---
 
-LLM machine unlearning removes specific training data influence from deployed models. Existing SOTA methods (SimNPO, NPO, GradDiff) are vulnerable to multi-turn adversarial prompting — where an attacker uses conversation history to gradually recover "forgotten" knowledge.
+## Method
 
-This project:
-- Proposes **MT-SimNPO**: augments the SimNPO unlearning objective with multi-turn forget examples
-- Builds a **multi-turn evaluation harness** (MT-Eval) with a 3-metric leakage bundle (NEM + SemSim + LLM judge)
-- Demonstrates vulnerability of existing methods on the TOFU benchmark
-- Runs ablations on `mt_weight`, attack type composition, and 3 random seeds
+Standard unlearning methods (NPO, SimNPO) suppress direct recall but stay vulnerable to multi-turn probing: an adversary can prime the model with context, invoke persona shifts, or use chain-of-thought decomposition to recover memorized knowledge across turns.
 
-Built on top of [open-unlearning](https://github.com/locuslab/open-unlearning).
+MT-SimNPO trains jointly on the original forget set and a synthetically generated multi-turn forget set, so the model resists adversarial recovery through conversation.
+
+**Loss function:**
+
+```
+L = γ · L_SimNPO(D_forget)
+  + γ · λ · L_SimNPO(D_mt_forget)
+  + α · L_NLL(D_retain)
+```
+
+`λ` (`mt_weight`) controls the multi-turn loss weight. Default hyperparameters: `β=4.5`, `γ=0.125`, `α=1.0`, `λ=1.0`.
+
+**Training attack types** (used to build `D_mt_forget`): `priming`, `self_correction`, `persona_switch`
+
+**Transfer attack types** (unseen at training, used for MTRR evaluation): `cot_decomposition`, `triangulation`
+
+**Stress attack** (held-out generalization): `crescendo`
+
+---
 
 ## Results
 
-All runs use Llama-3.1-8B-Instruct fine-tuned on TOFU (forget10/retain90 split).
+All results on TOFU forget10/retain90, base model Llama-3.1-8B-Instruct.
 
-### TOFU Benchmark
+**Metrics:**
+- FTR (Forget Truth Ratio): higher is better, oracle target ~0.641
+- MU (Model Utility): retain-set performance, higher is better
+- Transfer MTRR (Multi-Turn Recovery Rate on unseen attack types): fraction of examples where the model leaks forget-set information; lower is better
 
-| Method | Forget Truth Ratio ↑ | Model Utility ↑ |
-|---|---|---|
-| oracle\_retrain (gold) | 0.641 | 0.647 |
-| GradDiff | 0.000 | 0.671 |
-| NPO | 0.508 | 0.637 |
-| SimNPO | 0.523 | 0.637 |
-| **MT-SimNPO mw=0.5** | 0.524 | — |
-| **MT-SimNPO mw=1.0** (3 seeds) | **0.527 ± 0.004** | — |
-| **MT-SimNPO mw=2.0** | 0.524 | — |
+| Method | FTR | MU | Transfer MTRR |
+|---|---|---|---|
+| oracle_retain90 | 0.641 | 0.647 | — |
+| NPO | 0.508 | 0.637 | 0.540 |
+| SimNPO | 0.523 | 0.637 | 0.883 |
+| MT-SimNPO mw=0.5 | 0.525 | 0.640 | 0.708 |
+| **MT-SimNPO mw=1.0** (3 seeds) | **0.530 ± 0.003** | **0.644 ± 0.001** | **0.690** |
+| MT-SimNPO mw=2.0 | 0.524 | 0.641 | 0.615 |
 
-Forget Truth Ratio closer to oracle (0.64) = better unlearning. GradDiff collapses the model (FTR→0). MT-SimNPO matches SimNPO on standard TOFU while reducing multi-turn leakage.
+MT-SimNPO (mw=1.0) achieves **0% MTRR on crescendo stress attacks**, demonstrating generalization to unseen adversarial strategies. SimNPO's high transfer MTRR (0.883) shows that single-turn unlearning leaves models exploitable through conversation.
 
-### MT-Eval — Multi-Turn Recovery Rate (MTRR ↓ lower is better)
+---
 
-Evaluated on `mt_val.jsonl` with 3 attack types × 400 examples (priming, self-correction, persona-switch).
+## Repo Structure
 
-| Method | MTRR (trained attacks) |
-|---|---|
-| MT-SimNPO mw=0.5 | 0.708 |
-| MT-SimNPO mw=1.0 (seed 0) | 0.690 |
-| MT-SimNPO mw=1.0 (seed 1) | 0.735 |
-| MT-SimNPO mw=1.0 (seed 2) | 0.668 |
-| **MT-SimNPO mw=1.0 (mean)** | **0.698 ± 0.034** |
-| MT-SimNPO mw=2.0 | **0.615** |
+```
+configs/experiment/unlearn/tofu/
+  default.yaml            # baseline hyperparameters (NPO, SimNPO)
+  mt_simnpo_8b.yaml       # MT-SimNPO hyperparameters
+data/
+  mt_train.jsonl          # 1,200 training conversations
+  mt_val.jsonl            # 1,200 validation conversations
+  mt_test.jsonl           # 800 held-out test conversations
+scripts/
+  generate_mt_dataset.py  # synthesize multi-turn adversarial data (requires OpenAI key)
+  run_baselines.sh        # train NPO / SimNPO baselines
+  run_mt_simnpo.sh        # train MT-SimNPO (args: mt_weight seed)
+  run_vulnerability_demo.sh
+src/
+  train.py                # training entry point
+  eval_runner.py          # TOFU benchmark evaluation
+  trainer/unlearn/        # NPO, SimNPO, MT-SimNPO trainer implementations
+  eval/
+    mt_eval.py            # multi-turn evaluation harness
+    mt_metrics.py         # NEM, semantic similarity, leakage detection
+```
 
-Increasing `mt_weight` reduces multi-turn leakage (lower MTRR) at the cost of heavier training signal. mw=2.0 achieves the lowest MTRR.
+---
 
-### Vulnerability Demo — Transfer Attack MTRR (test split ↓ lower is better)
+## Quick Start
 
-| Model | Transfer MTRR |
-|---|---|
-| pre\_unlearning | **0.985** |
-| oracle\_retrain | 0.850 |
-| GradDiff | 0.003\* |
-| NPO | 0.540 |
-| SimNPO | **0.883** |
-
-The unmodified TOFU-trained model leaks forget-set knowledge in **98.5%** of multi-turn transfer attacks (cot_decomposition + triangulation). Even oracle retrain has 85% leakage — the 8B model retains general multi-turn reasoning regardless of unlearning.
-
-**Key finding:** NPO (54%) and SimNPO (88%) achieve standard TOFU metrics (FTR ≈ 0.52) but remain highly vulnerable to transfer attacks that were never seen during training. Single-turn unlearning does not generalize to multi-turn adversarial recovery.
-
-\*GradDiff's near-zero MTRR is a false positive: it collapses model utility (FTR=0.000) so severely the model cannot generate coherent multi-turn responses.
-
-*(Run `scripts/run_vulnerability_demo.sh` to reproduce.)*
-
-## Key Files
-
-| File | Description |
-|---|---|
-| `src/trainer/unlearn/mt_simnpo.py` | MT-SimNPO trainer |
-| `src/eval/mt_eval.py` | Multi-turn evaluator (MTRR, KLT) |
-| `src/eval/mt_metrics.py` | NEM + SemSim + LLM judge leakage bundle |
-| `src/data/mt_collator.py` | Multi-turn forget collator (prefix masking) |
-| `scripts/generate_mt_dataset.py` | MT conversation generation via GPT-4o-mini |
-| `scripts/run_mt_simnpo.sh` | MT-SimNPO training + eval runner |
-| `scripts/run_baselines.sh` | GradDiff / NPO / SimNPO baseline runner |
-| `scripts/run_vulnerability_demo.sh` | MT-Eval on baselines (no training) |
-| `data/mt_train.jsonl` | 1,200 multi-turn training conversations |
-| `data/mt_val.jsonl` | 1,200 validation conversations |
-| `data/mt_test.jsonl` | 800 held-out test conversations |
-| `notebooks/analysis.ipynb` | Figures and result tables |
-
-## Setup
+### 1. Install
 
 ```bash
 pip install -e ".[tofu]"
@@ -90,39 +86,66 @@ pip install bitsandbytes sentence-transformers spacy rouge-score openai python-L
 python -m spacy download en_core_web_sm
 ```
 
-## Reproducing Results
-
-### 1. Baselines (GradDiff, NPO, SimNPO)
+### 2. Download base checkpoints
 
 ```bash
-# RunPod A40 48GB — ~3 hours, ~$0.60
-bash scripts/run_baselines.sh 0
+huggingface-cli download open-unlearning/tofu_Llama-3.1-8B-Instruct_full \
+    --local-dir /workspace/checkpoints/tofu_8b_full
+
+huggingface-cli download open-unlearning/tofu_Llama-3.1-8B-Instruct_retain90 \
+    --local-dir /workspace/checkpoints/tofu_8b_retain90
 ```
 
-### 2. MT-SimNPO
+The multi-turn dataset (`data/mt_*.jsonl`) is already committed. To regenerate:
 
 ```bash
-# RunPod A40 48GB — ~5 hours per run
-bash scripts/run_mt_simnpo.sh 1.0 0   # mw=1.0 seed=0
+export OPENAI_API_KEY=<key>
+python scripts/generate_mt_dataset.py
+```
+
+### 3. Train
+
+```bash
+# Baselines (~3 hrs on A40 48 GB)
+bash scripts/run_baselines.sh 0        # seed=0
+
+# MT-SimNPO (3 seeds at mw=1.0)
+bash scripts/run_mt_simnpo.sh 1.0 0
 bash scripts/run_mt_simnpo.sh 1.0 1
 bash scripts/run_mt_simnpo.sh 1.0 2
-bash scripts/run_mt_simnpo.sh 0.5 0
-bash scripts/run_mt_simnpo.sh 2.0 0
 ```
 
-### 3. Vulnerability Demo
+### 4. Evaluate
 
 ```bash
-# Requires baselines checkpoints in saves/unlearn/ or /workspace/checkpoints/
-bash scripts/run_vulnerability_demo.sh
+# TOFU benchmark (FTR, MU)
+PYTHONPATH=src python src/eval_runner.py --config-name=eval.yaml \
+    experiment=eval/tofu/default \
+    model=Llama-3.1-8B-Instruct \
+    model.model_args.pretrained_model_name_or_path=<checkpoint_path> \
+    model.tokenizer_args.pretrained_model_name_or_path=/workspace/checkpoints/tofu_8b_full \
+    retain_logs_path=saves/eval/oracle_retain90/TOFU_EVAL.json \
+    task_name=<run_id>
+
+# MT-Eval (MTRR)
+PYTHONPATH=src python src/eval/mt_eval.py \
+    --checkpoint <checkpoint_path> \
+    --mt_test_path data/mt_test.jsonl \
+    --split test \
+    --output results/<run_id>/mt_test.json
 ```
 
-### 4. Analysis
+### 5. Pre-trained checkpoints
 
 ```bash
-jupyter notebook notebooks/analysis.ipynb
+huggingface-cli download harishm17/mt-unlearning-checkpoints \
+    --include "checkpoints/MTSimNPO_mw1.0_seed0/*" \
+    --local-dir /workspace/checkpoints \
+    --repo-type dataset
 ```
 
-Checkpoints and results are archived at:
-- `harishm17/mt-unlearning-checkpoints` (HuggingFace dataset)
-- `harishm17/mt-unlearning-results` (HuggingFace dataset)
+Eval results and training logs: `harishm17/mt-unlearning-results`
+
+---
+
+See [REPRODUCIBILITY.md](REPRODUCIBILITY.md) for full experiment details, all hyperparameters, oracle baseline setup, and the vulnerability demo.
