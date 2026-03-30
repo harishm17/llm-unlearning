@@ -163,26 +163,17 @@ huggingface-cli download harishm17/mt-unlearning-checkpoints \
 
 ## Results Summary
 
-| Method | FTR ↑ | MU ↑ | MTRR ↓ |
-|---|---|---|---|
-| oracle_retrain | 0.641 | 0.647 | — |
-| GradDiff | 0.000 | 0.671 | — |
-| SimNPO | 0.523 | 0.637 | — |
-| NPO | 0.508 | 0.637 | — |
-| MT-SimNPO mw=0.5 | 0.524 | — | 0.708 |
-| MT-SimNPO mw=1.0 | 0.527 ± 0.004 | — | 0.698 ± 0.034 |
-| MT-SimNPO mw=2.0 | 0.524 | — | 0.615 |
+| Method | FTR ↑ | MU ↑ | MTRR (val, trained) ↓ | MTRR (test, transfer) ↓ |
+|---|---|---|---|---|
+| oracle_retrain | 0.641 | 0.647 | — | 0.850 |
+| GradDiff | 0.000 | 0.671 | — | 0.003* |
+| SimNPO | 0.523 | 0.637 | — | 0.883 |
+| NPO | 0.508 | 0.637 | — | 0.540 |
+| MT-SimNPO mw=0.5 | 0.525 | 0.640 | — | 0.708 |
+| MT-SimNPO mw=1.0 (seed0) | 0.532 | 0.643 | 0.690 | 0.690 |
+| MT-SimNPO mw=1.0 (seed1) | 0.527 | 0.645 | 0.735 | — |
+| MT-SimNPO mw=2.0 | 0.524 | 0.641 | — | 0.615 |
 
-Vulnerability demo — transfer attack MTRR on test split (↓ better):
+\*GradDiff achieves low transfer MTRR through model collapse (FTR=0.000), not genuine robustness.
 
-| Model | Transfer MTRR |
-|---|---|
-| pre\_unlearning | 0.985 |
-| oracle\_retrain | 0.850 |
-| GradDiff | 0.003\* |
-| NPO | 0.540 |
-| SimNPO | 0.883 |
-
-\*GradDiff achieves low MTRR through model collapse (FTR=0.000), not genuine robustness.
-
-FTR = Forget Truth Ratio, MU = Model Utility, MTRR = Multi-Turn Recovery Rate.
+FTR = Forget Truth Ratio, MU = Model Utility, MTRR = Multi-Turn Recovery Rate (lower = better unlearning robustness).

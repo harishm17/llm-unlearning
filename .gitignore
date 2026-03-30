@@ -3,6 +3,9 @@ checkpoints/
 results/
 !results/vulnerability/
 !results/e2e_final/
+!results/MTSimNPO_*/
+saves*/
+!saves/eval/*/TOFU_EVAL.json
 submit.py
 !src/data/__init__.py
 logs/

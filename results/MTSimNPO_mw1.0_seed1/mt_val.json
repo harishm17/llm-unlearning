@@ -1,0 +1,32 @@
+{
+  "priming_v2": {
+    "mtrr": 0.735,
+    "avg_rouge": 0.41433393887516484,
+    "avg_nem": 0.5735618686868686,
+    "avg_sem": 0.7224306993931532,
+    "avg_judge": 0.0,
+    "avg_klt": null,
+    "n": 400
+  },
+  "self_correction_v2": {
+    "mtrr": 0.735,
+    "avg_rouge": 0.41433393887516484,
+    "avg_nem": 0.5735618686868686,
+    "avg_sem": 0.7224306993931532,
+    "avg_judge": 0.0,
+    "avg_klt": null,
+    "n": 400
+  },
+  "persona_switch_v2": {
+    "mtrr": 0.735,
+    "avg_rouge": 0.41433393887516484,
+    "avg_nem": 0.5735618686868686,
+    "avg_sem": 0.7224306993931532,
+    "avg_judge": 0.0,
+    "avg_klt": null,
+    "n": 400
+  },
+  "overall_mtrr_trained": 0.735,
+  "overall_mtrr_transfer": null,
+  "overall_mtrr_stress": null
+}

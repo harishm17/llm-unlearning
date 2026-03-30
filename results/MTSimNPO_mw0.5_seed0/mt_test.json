@@ -1,0 +1,23 @@
+{
+  "cot_decomposition": {
+    "mtrr": 0.7075,
+    "avg_rouge": 0.4040560234129016,
+    "avg_nem": 0.5043457792207792,
+    "avg_sem": 0.7189374795556068,
+    "avg_judge": 0.0,
+    "avg_klt": null,
+    "n": 400
+  },
+  "triangulation": {
+    "mtrr": 0.7075,
+    "avg_rouge": 0.4040560234129016,
+    "avg_nem": 0.5043457792207792,
+    "avg_sem": 0.7189374795556068,
+    "avg_judge": 0.0,
+    "avg_klt": null,
+    "n": 400
+  },
+  "overall_mtrr_trained": null,
+  "overall_mtrr_transfer": 0.7075,
+  "overall_mtrr_stress": null
+}
