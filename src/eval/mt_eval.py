@@ -181,7 +181,6 @@ def main():
     args = parser.parse_args()
 
     from transformers import AutoModelForCausalLM, AutoTokenizer
-    import openai
 
     tokenizer = AutoTokenizer.from_pretrained(args.checkpoint)
     model = AutoModelForCausalLM.from_pretrained(
@@ -189,7 +188,10 @@ def main():
     )
     model.eval()
 
-    openai_client = openai.OpenAI(api_key=args.openai_key) if args.openai_key else None
+    openai_client = None
+    if args.openai_key:
+        import openai
+        openai_client = openai.OpenAI(api_key=args.openai_key)
 
     evaluator = MultiTurnEvaluator(
         model=model, tokenizer=tokenizer,
